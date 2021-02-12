@@ -1,0 +1,178 @@
+//メニューバーに「メール下書き」とそのサブメニューを追加するコード
+function onOpen(){
+  const spreadsheet = SpreadsheetApp.getActive();
+  const menuItems = [{name: 'グループ選択', functionName: 'groupSelect'},{name: '外病院メール', functionName: 'createEmailsDraft'},{name: '医局メール', functionName: 'createEmailsDraft2'},{name: '学外実習表作成', functionName: 'gakugaiList'}];
+  spreadsheet.addMenu('メール下書き', menuItems);
+
+
+ // グループの初期化
+  const sheet_present = spreadsheet.getActiveSheet();
+  sheet_present.getRange(1,20).clear();
+  sheet_present.getRange(1,21).clear();
+}
+
+//グループを選択するコード
+//シートの把持（１，20-21）にグループ名を入力し、そこを以降他の関数ではそこを参考するようにする。
+function groupSelect(){
+  var selectedgroup = Browser.inputBox("SGTグループを入力", "平仮名２文字で入力してください。", Browser.Buttons.OK_CANCEL);
+  if (selectedgroup != "cancel"){
+    Browser.msgBox("SGTグループを「" + selectedgroup + "」に設定しました。");
+    var group1value = selectedgroup[0];
+    var group2value = selectedgroup[1];
+  }
+ 
+ const spreadsheet = SpreadsheetApp.getActive();
+ spreadsheet.setActiveSheet(spreadsheet.getSheetByName("students"));
+ var sheet_set = spreadsheet.getActiveSheet();
+ sheet_set.getRange(1,20).setValue(group1value);
+ sheet_set.getRange(1,21).setValue(group2value);
+
+ console.log(group1value);
+ console.log(group2value);
+}
+
+//外病院メールを作成するコード
+function createEmailsDraft(){
+  const spreadsheet = SpreadsheetApp.getActive();
+  spreadsheet.setActiveSheet(spreadsheet.getSheetByName("students"));
+  const sheet = spreadsheet.getActiveSheet();
+
+//グループ変数を格納
+  let group1 = sheet.getRange(1,20).getValue();
+  let group2 = sheet.getRange(1,21).getValue();
+
+  //CC用のメールアドレスを設定
+  //複数設定したい場合は、カンマ区切りで指定してください
+  const CC = "及川 昌也 <moikawa@openhp.or.jp>,土屋 誉 <tsuchiya@openhp.or.jp>,Hiromune Shimamura <hshima-thk@umin.ac.jp>,遠藤公人 <endo-int@da2.so-net.ne.jp>,舟山裕士 <yfunayama@sendai.jrc.or.jp>,徳村弘実 <h.tokumura2722@gmail.com>,Yoichi Narushima <narukun@tohokuh.johas.go.jp>,青木豪 <aoki@surg.med.tohoku.ac.jp>,益田邦洋 <k-masuda0911@surg.med.tohoku.ac.jp>,田中直樹 <n-tanaka@surg.med.tohoku.ac.jp>,前田晋平 <maeda.shimpei@surg.med.tohoku.ac.jp>,taiki.kajiwara.d8@tohoku.ac.jp";
+
+ //メールのタイトルと宛先設定
+ const to = "masaharu.ishida.d3@tohoku.ac.jp";
+ const title = "SGT学外実習のご連絡" ;
+
+ //メールの本文
+ var mailtext =  " 各位\n\n 平素より大変お世話になっております。 \n 今週より、SGTの新クールが始まりました。\n 医学部のカリキュラムの変更に伴い、変則的な年次となっております。\n\n 今期の学外における実習期間は、 period の5日間になります。\n 実習先病院が決まりましたので、お知らせいたします。\n 学生には前もって各病院にメールまたは電話にて必ず連絡をとる様に指導しております。\n 実習終了時には、従事証明書にご記入戴き、学生に持たせていただきたく存じます。\nお忙しい中とは存じますが、学生教育のほど宜しくお願いいたします。\n\nstudent_list \n ";
+
+ //studentsのテーブルから、グループ名で行を抽出し、学生番号slice(3,5)、外病院data[i][6]を取り出して、リスト'alllist'に格納
+ var dat = sheet.getDataRange().getValues();
+ var alllist = "";
+
+
+ for(var i=0;i<dat.length;i++){
+    if(dat[i][1] == group1 || dat[i][1] == group2){
+      var student = dat[i];
+
+      alllist += student.slice(3,5);
+      alllist += "\t";
+      alllist += dat[i][6];
+      alllist += "\n";
+    
+    }
+  }
+
+ //カンマをタブに変換
+ alllist = alllist.replace(/,/g, "\t");
+
+  console.log(alllist);
+ 
+ //scheduleシートからグループ名（グループ１だけ対象）に基づいて、実習期間を抽出
+ spreadsheet.setActiveSheet(spreadsheet.getSheetByName("schedule")); 
+  const sheet2 = spreadsheet.getActiveSheet();
+
+ var dat2 = sheet2.getDataRange().getValues();
+
+
+ for(var i=0;i<dat2.length;i++){
+    if(dat2[i][1] == group1){
+      var period = dat2[i][5];
+     
+    
+    }
+  }
+
+  console.log(period);
+
+ //メール本文の実習期間とリストをリプレース
+  mailtext = mailtext.replace("period", period);
+  mailtext = mailtext.replace("student_list", alllist);
+
+ const message = mailtext;
+ 
+    
+  //取得した内容をGmailで下書き作成
+ //GmailApp.createDraft(to, title, message);
+　GmailApp.createDraft(to, title, message, {cc: CC});
+  
+}
+
+//医局メールを作成するコード
+function createEmailsDraft2(){
+  const spreadsheet = SpreadsheetApp.getActive();
+  spreadsheet.setActiveSheet(spreadsheet.getSheetByName("students"));
+  const sheet = spreadsheet.getActiveSheet();
+
+ //グループ変数を格納
+  let group1 = sheet.getRange(1,20).getValue();
+  let group2 = sheet.getRange(1,21).getValue();
+
+ //メールの宛先、タイトル、本文を作成
+ const to = "	ikyoku1@surg.med.tohoku.ac.jp";
+ const title = "SGT新クールのご連絡" ;
+
+ var mailtext =  " 各位\n\n 平素より大変お世話になっております。 \n 今週より、SGTの新クールが始まりました。\n 配属は下記のようになっております。\nお忙しい中とは存じますが、学生教育のほど宜しくお願いいたします。\n\n ＣＶ実習：　CVtraining先生\n 教授講義：　professor_lecture \n 学生発表：　presentation \n\n student_list \n ";
+
+ // student_list用のデータ作成。グループで拾い上げ、学籍番号、氏名、１−３週、４週を抽出し、→alllistに格納
+ var dat = sheet.getDataRange().getValues();
+ var alllist = "";
+
+ for(var i=0;i<dat.length;i++){
+    if(dat[i][1] == '班' || dat[i][1] == group1 || dat[i][1] == group2){
+      var student = dat[i];
+
+      alllist += student.slice(3,7);
+      alllist += "\n";
+    
+    }
+  }
+
+ //カンマをタブに変換
+ alllist = alllist.replace(/,/g, "\t");
+
+  console.log(alllist);
+
+ // sheetを変えて、スケジュール作成
+
+   //シートscheduleをアクティブにしてリストを取得
+  spreadsheet.setActiveSheet(spreadsheet.getSheetByName("schedule")); 
+  const sheet2 = SpreadsheetApp.getActiveSheet();
+
+ var dat2 = sheet2.getDataRange().getValues();
+
+ //グループ名（グループ１のみ）で検索し、教授講義、CV実習、学生発表日を抽出
+ for(var i=0;i<dat2.length;i++){
+    if(dat2[i][1] == group1){
+      var professor_lecture = dat2[i][6];
+      var presentation = dat2[i][7];
+      var CVtraining = dat2[i][8];
+    
+    }
+  }
+
+  console.log(professor_lecture);
+  console.log(presentation);
+  console.log(CVtraining);
+//ここまでがスケジュール作成コード
+
+ //メール本文の該当項目をリプレース
+  mailtext = mailtext.replace("CVtraining", CVtraining);
+  mailtext = mailtext.replace("professor_lecture", professor_lecture);
+  mailtext = mailtext.replace("presentation", presentation);
+  mailtext = mailtext.replace("student_list", alllist);
+
+ const message = mailtext;
+ 
+ console.log(message);
+    
+  //取得した内容をGmailで下書き作成
+ GmailApp.createDraft(to, title, message);
+  
+}

@@ -1,7 +1,7 @@
 //メニューバーに「メール下書き」とそのサブメニューを追加するコード
 function onOpen(){
   const spreadsheet = SpreadsheetApp.getActive();
-  const menuItems = [{name: 'グループ選択', functionName: 'groupSelect'},{name: '外病院メール', functionName: 'createEmailsDraft'},{name: '医局メール', functionName: 'createEmailsDraft2'},{name: '学外実習表作成', functionName: 'gakugaiList'}];
+  const menuItems = [{name: 'グループ選択', functionName: 'groupSelect'},{name: '外病院メール', functionName: 'createEmailsDraft'},{name: '医局メール', functionName: 'createEmailsDraft2'},{name: '教務メール', functionName: 'email2Kyomu'}];
   spreadsheet.addMenu('メール下書き', menuItems);
 
 
@@ -31,7 +31,9 @@ function groupSelect(){
  console.log(group2value);
 }
 
+
 //外病院メールを作成するコード
+
 function createEmailsDraft(){
   const spreadsheet = SpreadsheetApp.getActive();
   spreadsheet.setActiveSheet(spreadsheet.getSheetByName("students"));
@@ -40,6 +42,7 @@ function createEmailsDraft(){
 //グループ変数を格納
   let group1 = sheet.getRange(1,20).getValue();
   let group2 = sheet.getRange(1,21).getValue();
+
 
   //CC用のメールアドレスを設定
   //複数設定したい場合は、カンマ区切りで指定してください
@@ -101,7 +104,6 @@ function createEmailsDraft(){
   //取得した内容をGmailで下書き作成
  //GmailApp.createDraft(to, title, message);
 　GmailApp.createDraft(to, title, message, {cc: CC});
-  
 }
 
 //医局メールを作成するコード
@@ -175,4 +177,157 @@ function createEmailsDraft2(){
   //取得した内容をGmailで下書き作成
  GmailApp.createDraft(to, title, message);
   
+}
+
+
+//学外実習表を作成する関数。email2Kyomuで参照する。
+//学外実習予定表のIDが必要
+function gakugaiList(){
+
+ //studentsをsheet変数に格納
+  const spreadsheet = SpreadsheetApp.getActive();
+  spreadsheet.setActiveSheet(spreadsheet.getSheetByName("students"));
+  const sheet = spreadsheet.getActiveSheet();
+
+ //グループ変数を格納
+  let group1 = sheet.getRange(1,20).getValue();
+  let group2 = sheet.getRange(1,21).getValue();
+
+  console.log(group1);
+  console.log(group2);
+
+  var student_data = sheet.getRange(1,1,150,15).getValues();
+
+ //schduleをsheet2に格納
+  spreadsheet.setActiveSheet(spreadsheet.getSheetByName("schedule")); 
+  const sheet2 = spreadsheet.getActiveSheet();
+
+  var dat2 = sheet2.getDataRange().getValues();
+
+ //グループ名（グループ１のみ）で４週目の実習期間を抽出
+ for(var i=0;i<dat2.length;i++){
+    if(dat2[i][1] == group1){
+      var duration4 = dat2[i][5];
+      var start4 = duration4.slice(0,5);
+      var end4 = duration4.slice(6,12);
+     
+    }
+  }
+
+ //学外実習予定表を立ち上げ、グループ名でシートをアクティブにする。
+ var gakugaihyo = SpreadsheetApp.openById('1V1Jiz1YAkUZx9FxlBszgHh_QUU_jXnYZLA0syxU2524');
+
+ //学生が外病院に行くかチェックし、外病院名を抽出する。学外表を立ち上げる。学外表の当該学生箇所に外病院情報を入力
+  for(var i=0;i<student_data.length;i++){
+    // グループ名による学生の抽出
+    if(student_data[i][1] == group1 || student_data[i][1] == group2){
+       // 学生名からの、グループ毎の学外実習シートの抽出
+       var gakugaihyo_active = gakugaihyo.getSheetByName(student_data[i][1]);
+       var gakugaihyo_active_data = gakugaihyo_active.getDataRange().getValues();
+      
+       // 学外実習表における当該学生の検索
+       for(var j=0;j<gakugaihyo_active_data.length;j++){
+         if(student_data[i][3]==gakugaihyo_active_data[j][8]){
+           console.log(student_data[i][3]);
+
+           // 外病院毎に値の入力
+           switch (true) {
+            case student_data[i][6] == "仙台オープン病院":
+              gakugaihyo_active.getRange(j+1, 1, 1, 8).setValues([["仙台オープン病院","土屋　誉","仙台市宮城野区鶴ケ谷5-22-1","消化器外科・一般外科","及川　昌也",start4,"~",end4]]);
+              var gakugaitest = gakugaihyo_active.getRange(j+1, 1, 1, 8).getValues();
+              console.log(gakugaitest);
+              break;
+            
+            case student_data[i][6] == "東北ろうさい病院":
+              gakugaihyo_active.getRange(j+1, 1, 1, 8).setValues([["東北ろうさい病院","徳村　弘実","仙台市青葉区台原4-3-21","消化器科","成島　陽一",start4,"~",end4]]);
+              var gakugaitest = gakugaihyo_active.getRange(j+1, 1, 1, 8).getValues();
+              console.log(gakugaitest);
+              break;
+            case student_data[i][6] == "JCHO仙台南病院":
+              gakugaihyo_active.getRange(j+1, 1, 1, 8).setValues([["JCHO仙台南病院","朝倉　徹","仙台市太白区中田町字前沖143","外科","遠藤　公人",start4,"~",end4]]);
+              var gakugaitest = gakugaihyo_active.getRange(j+1, 1, 1, 8).getValues();
+              console.log(gakugaitest);
+              break;
+            case student_data[i][6] == "仙台医療センター":
+              gakugaihyo_active.getRange(j+1, 1, 1, 8).setValues([["仙台医療センター","上之原　広司","仙台市宮城野区宮城野2-11-12","外科","島村　弘宗",start4,"~",end4]]);
+              var gakugaitest = gakugaihyo_active.getRange(j+1, 1, 1, 8).getValues();
+              console.log(gakugaitest);
+              break;
+            
+            default:
+              break;
+            }
+           
+
+
+
+          }
+       }
+    }
+ }
+}
+
+// 実習予定表をエクセルファイルにして、グーグルドライブにダウンロードする関数。email2Kyomuで参照
+// 学外実習予定表のID　と　保存フォルダのIDが必要
+function ss2xlsx() {
+  var gakugai_spreadsheet_id = "1V1Jiz1YAkUZx9FxlBszgHh_QUU_jXnYZLA0syxU2524";
+  var gakugai_exel;
+  var url = "https://docs.google.com/spreadsheets/d/" + gakugai_spreadsheet_id + "/export?format=xlsx";
+  var options = {
+    method: "get",
+    headers: {"Authorization": "Bearer " + ScriptApp.getOAuthToken()},
+    muteHttpExceptions: true
+  };
+  
+   //studentsをsheet変数に格納
+  const spreadsheet = SpreadsheetApp.getActive();
+  spreadsheet.setActiveSheet(spreadsheet.getSheetByName("students"));
+  const sheet = spreadsheet.getActiveSheet();
+
+ //グループ変数を格納
+  let group1 = sheet.getRange(1,20).getValue();
+  let group2 = sheet.getRange(1,21).getValue();
+
+
+  // 保存するフォルダの指定
+  var folder = DriveApp.getFolderById("1dWQQp3HT2qY_bOzxlpDAlcgk0fDu5IdD");
+
+  var res = UrlFetchApp.fetch(url, options);
+  if (res.getResponseCode() == 200) {
+    var ss = SpreadsheetApp.openById(gakugai_spreadsheet_id);
+    gakugai_exel = folder.createFile(res.getBlob()).setName("SGT学外実習表" + group1 + group2 +"班.xlsx");
+  }
+  return gakugai_exel;
+}
+
+
+  
+//教務へのメール。学外実習予定表の添付も行う。
+function email2Kyomu(){
+ 
+  //studentsをsheet変数に格納
+  const spreadsheet = SpreadsheetApp.getActive();
+  spreadsheet.setActiveSheet(spreadsheet.getSheetByName("students"));
+  const sheet = spreadsheet.getActiveSheet();
+
+ //グループ変数を格納
+  let group1 = sheet.getRange(1,20).getValue();
+  let group2 = sheet.getRange(1,21).getValue();
+
+
+　gakugaiList();
+
+ var tenpu = ss2xlsx();
+
+ const to = "med-kyo2@grp.tohoku.ac.jp";
+ const CC2 = "	taiki.kajiwara.d8@tohoku.ac.jp,aoki takeshi <takegogo13@gmail.com>";
+ const title = "SGT学外実習のご連絡";
+
+ var mailtext =  "教務課　遠藤さま\n\nいつもお世話になっております。\n総合外科（旧第一外科）の石田です。\n今クールのSGTの学外実習表を添付しました。ご査収ください。\n今クールの総合外科の実習班はgroups班になります。\nよろしくお願いいたします。 ";
+
+ mailtext = mailtext.replace("groups", group1+group2);
+ const message = mailtext;
+ console.log(message);
+ GmailApp.createDraft(to, title, message, {cc: CC2, attachments: [tenpu]});
+
 }
